@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { API_URL } from "../config";
 
 function CompanyForm({ onClose, onSuccess }) {
   const [formData, setFormData] = useState({
@@ -39,7 +40,7 @@ function CompanyForm({ onClose, onSuccess }) {
 
     try {
       const response = await fetch(
-        "http://localhost:4000/api/admin/companies",
+        `${API_URL}/api/admin/companies`,
         {
           method: "POST",
           headers: {
@@ -184,7 +185,7 @@ export default function Admin() {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch("http://localhost:4000/api/admin/users");
+      const response = await fetch(`${API_URL}/api/admin/users`);
       if (!response.ok) throw new Error("Failed to fetch users");
       const data = await response.json();
       setUsers(data);
@@ -196,7 +197,7 @@ export default function Admin() {
 
   const fetchCompanies = async () => {
     try {
-      const response = await fetch("http://localhost:4000/api/admin/companies");
+      const response = await fetch(`${API_URL}/api/admin/companies`);
       if (!response.ok) throw new Error("Failed to fetch companies");
       const data = await response.json();
       setCompanies(data);
@@ -212,7 +213,7 @@ export default function Admin() {
     if (window.confirm("Are you sure you want to delete this user?")) {
       try {
         const response = await fetch(
-          `http://localhost:4000/api/admin/users/${userId}`,
+          `${API_URL}/api/admin/users/${userId}`,
           {
             method: "DELETE",
             headers: {
@@ -234,7 +235,7 @@ export default function Admin() {
     if (window.confirm("Are you sure you want to delete this company?")) {
       try {
         const response = await fetch(
-          `http://localhost:4000/api/admin/companies/${companyId}`,
+          `${API_URL}/api/admin/companies/${companyId}`,
           {
             method: "DELETE",
             headers: {

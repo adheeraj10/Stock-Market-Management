@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { API_URL } from "../config";
 import Navbar from "../Components/Navbar/Navbar";
 import { typographyClasses } from "@mui/material";
 
@@ -30,7 +31,7 @@ const Trade = () => {
 
   const fetchCompanies = async () => {
     try {
-      const response = await fetch("http://localhost:4000/api/all_companies");
+      const response = await fetch(`${API_URL}/api/all_companies`);
       if (!response.ok) {
         throw new Error("Failed to fetch data");
       }
@@ -45,7 +46,7 @@ const Trade = () => {
 
   const fetchStockInfo = async () => {
     try {
-      const response = await fetch("http://localhost:4000/api/get_stock");
+      const response = await fetch(`${API_URL}/api/get_stock`);
       if (!response.ok) {
         throw new Error("Failed to fetch data");
       }
@@ -60,11 +61,11 @@ const Trade = () => {
 
   const fetchNews = async () => {
     try {
-      const response = await fetch("http://localhost:4000/api/current_news");
+      const response = await fetch(`${API_URL}/api/current_news`);
       if (!response.ok) throw new Error("Failed to fetch news");
-      
+
       const data = await response.json();
-      
+
       // Wait until data is non-empty
       if (data && data.length > 0) {
         setNews(data);
@@ -76,11 +77,11 @@ const Trade = () => {
       console.error("Error fetching news:", err);
     }
   };
-  
+
 
   const fetchparticularcompany = async (company_name, quantity1, operation) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/trade`, {
+      const response = await fetch(`${API_URL}/api/trade`, {
         method: "POST",
         headers: {
           "Content-type": "application/json",
@@ -222,9 +223,8 @@ const Trade = () => {
               )}
               {success && (
                 <div
-                  className={`bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded ${
-                    isVisible ? "fade-in" : "fade-out"
-                  }`}
+                  className={`bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded ${isVisible ? "fade-in" : "fade-out"
+                    }`}
                 >
                   {success}
                 </div>

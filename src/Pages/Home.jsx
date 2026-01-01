@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { API_URL } from "../config";
 import "./home.css";
 import Navbar from "../Components/Navbar/Navbar";
 import { Line } from "react-chartjs-2";
@@ -39,7 +40,7 @@ export const Home = () => {
 
   const fetchCompanies = async () => {
     try {
-      const response = await fetch("http://localhost:4000/api/companies");
+      const response = await fetch(`${API_URL}/api/companies`);
       if (!response.ok) {
         throw new Error("Failed to fetch data");
       }
@@ -56,7 +57,7 @@ export const Home = () => {
   const fetchHistoricalData = async (symbol) => {
     try {
       const response = await fetch(
-        `http://localhost:4000/api/historical/${symbol}`
+        `${API_URL}/api/historical/${symbol}`
       );
       if (!response.ok) {
         throw new Error("Failed to fetch historical data");
@@ -93,19 +94,19 @@ export const Home = () => {
 
   const chartData = historicalData
     ? {
-        labels: historicalData.map((data) =>
-          new Date(data.date).toLocaleDateString()
-        ),
-        datasets: [
-          {
-            label: `${selectedCompany} Stock Price`,
-            data: historicalData.map((data) => data.close),
-            fill: true,
-            borderColor: "rgb(75, 192, 192)",
-            tension: 0.1,
-          },
-        ],
-      }
+      labels: historicalData.map((data) =>
+        new Date(data.date).toLocaleDateString()
+      ),
+      datasets: [
+        {
+          label: `${selectedCompany} Stock Price`,
+          data: historicalData.map((data) => data.close),
+          fill: true,
+          borderColor: "rgb(75, 192, 192)",
+          tension: 0.1,
+        },
+      ],
+    }
     : null;
 
   const chartOptions = {

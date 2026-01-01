@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { API_URL } from "../../config";
 import { useNavigate } from "react-router-dom";
 
 export const Login = () => {
@@ -22,7 +23,7 @@ export const Login = () => {
     console.log("Attempting to send login data:", formData);
 
     try {
-      const response = await fetch("http://localhost:4000/formPost", {
+      const response = await fetch(`${API_URL}/formPost`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

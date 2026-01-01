@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { API_URL } from "../config";
 import Navbar from "../Components/Navbar/Navbar";
 const ChatInterface = () => {
   const [messages, setMessages] = useState([
@@ -19,7 +20,7 @@ const ChatInterface = () => {
   const processPrompt = async (prompt) => {
     let response;
     try {
-      response = await fetch("http://localhost:4000/api/processPrompt", {
+      response = await fetch(`${API_URL}/api/processPrompt`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -85,9 +86,8 @@ const ChatInterface = () => {
         {messages.map((message, index) => (
           <div
             key={index}
-            className={`flex items-start space-x-4 p-4 rounded-lg ${
-              message.role === "assistant" ? "bg-gray-800" : "bg-black"
-            }`}
+            className={`flex items-start space-x-4 p-4 rounded-lg ${message.role === "assistant" ? "bg-gray-800" : "bg-black"
+              }`}
           >
             <div className="flex-1">
               {message.role === "assistant" && message.content.query && (

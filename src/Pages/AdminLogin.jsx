@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { API_URL } from "../config";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { FaUser, FaLock } from "react-icons/fa"; // Import icons
@@ -22,7 +23,7 @@ export default function AdminLogin() {
     e.preventDefault();
     try {
       const response = await axios.post(
-        "http://localhost:4000/api/admin_login",
+        `${API_URL}/api/admin_login`,
         credentials
       );
       if (response.status === 200) {

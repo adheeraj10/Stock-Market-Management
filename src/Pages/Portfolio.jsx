@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { API_URL } from "../config";
 import Navbar from "../Components/Navbar/Navbar";
 
 import {
@@ -41,7 +42,7 @@ const Portfolio = () => {
 
   const fetchBalance = async () => {
     try {
-      const response = await fetch("http://localhost:4000/api/user/balance", {
+      const response = await fetch(`${API_URL}/api/user/balance`, {
         method: "GET",
       });
       if (!response.ok) throw new Error("Failed to fetch balance");
@@ -52,34 +53,34 @@ const Portfolio = () => {
     }
   };
   const pdfgenerator = async () => {
-    const response = await fetch('http://localhost:4000/api/generate-report', {
+    const response = await fetch(`${API_URL}/api/generate-report`, {
       method: 'GET',
       credentials: 'include'
     })
-    .then(response => {
-      if (response.ok) {
-        return response.blob();
-      }
-      throw new Error('Network response was not ok');
-    })
-    .then(blob => {
-      // Create a URL for the blob
-      const url = window.URL.createObjectURL(blob);
-      // Create a temporary link and click it to download
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'stock_report.pdf';
-      document.body.appendChild(a);
-      a.click();
-      // Clean up
-      window.URL.revokeObjectURL(url);
-      a.remove();
-    })
-    .catch(error => console.error('Error downloading report:', error));
+      .then(response => {
+        if (response.ok) {
+          return response.blob();
+        }
+        throw new Error('Network response was not ok');
+      })
+      .then(blob => {
+        // Create a URL for the blob
+        const url = window.URL.createObjectURL(blob);
+        // Create a temporary link and click it to download
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'stock_report.pdf';
+        document.body.appendChild(a);
+        a.click();
+        // Clean up
+        window.URL.revokeObjectURL(url);
+        a.remove();
+      })
+      .catch(error => console.error('Error downloading report:', error));
   };
   const fetchStockInfo = async () => {
     try {
-      const response = await fetch("http://localhost:4000/api/get_stock");
+      const response = await fetch(`${API_URL}/api/get_stock`);
       if (!response.ok) throw new Error("Failed to fetch stock data");
       const data = await response.json();
 
@@ -94,13 +95,13 @@ const Portfolio = () => {
 
   const fetchTransactionInfo = async () => {
     try {
-      let url = "http://localhost:4000/api/get_transaction";
-      
+      let url = `${API_URL}/api/get_transaction`;
+
       // Add date parameters if they exist
       if (startDate && endDate) {
         url += `?startDate=${startDate}&endDate=${endDate}`;
       }
-      
+
       const response = await fetch(url);
       if (!response.ok) throw new Error("Failed to get transaction record");
       const data = await response.json();
@@ -119,7 +120,7 @@ const Portfolio = () => {
 
   const fetchTotalprofit = async () => {
     try {
-      const result = await fetch(`http://localhost:4000/api/profitloss`);
+      const result = await fetch(`${API_URL}/api/profitloss`);
       if (!result.ok) throw new Error(`Failed to fetch profit/loss history`);
 
       const data = await result.json();
@@ -135,7 +136,7 @@ const Portfolio = () => {
   const fetchComprof = async () => {
     try {
       const result = await fetch(
-        `http://localhost:4000/api/particularprofitloss`
+        `${API_URL}/api/particularprofitloss`
       );
       if (!result.ok) throw new Error("Failed to get company-wise data");
 
@@ -148,13 +149,13 @@ const Portfolio = () => {
 
   const fetchProfitloss = async () => {
     try {
-      const result = await fetch(`http://localhost:4000/api/profitloss`);
+      const result = await fetch(`${API_URL}/api/profitloss`);
       if (!result.ok) throw new Error("failed to get proft loss statemnt");
 
       const data = await result.json();
       console.log(data);
       settotprof(data);
-    } catch (error) {}
+    } catch (error) { }
   };
 
   const handleDateFilter = (e) => {
@@ -176,17 +177,17 @@ const Portfolio = () => {
             onClick={pdfgenerator}
             className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center"
           >
-            <svg 
-              className="w-5 h-5 mr-2" 
-              fill="none" 
-              stroke="currentColor" 
+            <svg
+              className="w-5 h-5 mr-2"
+              fill="none"
+              stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" 
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
               />
             </svg>
             Download Report
@@ -245,9 +246,8 @@ const Portfolio = () => {
           <div className="text-white mb-4 text-center">
             <span className="font-bold">Status:</span>{" "}
             <span
-              className={`font-bold ${
-                totprof.status === "Profit" ? "text-green-500" : "text-red-500"
-              }`}
+              className={`font-bold ${totprof.status === "Profit" ? "text-green-500" : "text-red-500"
+                }`}
             >
               {totprof.status || "N/A"}{" "}
             </span>
@@ -302,7 +302,7 @@ const Portfolio = () => {
       <div className="border-blue-500 bg-gray-800 p-6 rounded-lg border-2 col-span-2">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-white">Transaction History</h2>
-          
+
           {/* Date Filter Form */}
           <form onSubmit={handleDateFilter} className="flex gap-4 items-center">
             <div className="flex items-center gap-2">

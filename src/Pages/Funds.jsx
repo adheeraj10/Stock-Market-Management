@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { API_URL } from "../config";
 import Navbar from "../Components/Navbar/Navbar";
 
 export const Funds = () => {
@@ -14,7 +15,7 @@ export const Funds = () => {
 
   const fetchBalance = async () => {
     try {
-      const response = await fetch("http://localhost:4000/api/user/balance", {
+      const response = await fetch(`${API_URL}/api/user/balance`, {
         method: "GET",
       });
       if (!response.ok) throw new Error("Failed to fetch balance");
@@ -36,7 +37,7 @@ export const Funds = () => {
 
     try {
       const response = await fetch(
-        "http://localhost:4000/api/user/total_balance",
+        `${API_URL}/api/user/total_balance`,
         {
           method: "POST",
           headers: {
@@ -68,7 +69,7 @@ export const Funds = () => {
 
     try {
       const response = await fetch(
-        "http://localhost:4000/api/user/total_balance",
+        `${API_URL}/api/user/total_balance`,
         {
           method: "POST",
           headers: {

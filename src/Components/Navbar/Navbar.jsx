@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { API_URL } from "../../config";
 import { useNavigate, useLocation } from "react-router-dom";
 // import {
 //   Navbar as MTNavbar,
@@ -34,7 +35,7 @@ export const Navbar = () => {
 
   const fetchUser = async () => {
     try {
-      const response = await fetch(`http://localhost:4000/api/username`);
+      const response = await fetch(`${API_URL}/api/username`);
       if (!response.ok) {
         throw new Error("Failed to fetch username");
       }
@@ -50,11 +51,10 @@ export const Navbar = () => {
       <li>
         <button
           onClick={() => handleNavigate("home")}
-          className={`${
-            location.pathname === "/home"
-              ? "text-blue-600"
-              : "hover:text-blue-500"
-          } text-sm font-semibold transition duration-300`}
+          className={`${location.pathname === "/home"
+            ? "text-blue-600"
+            : "hover:text-blue-500"
+            } text-sm font-semibold transition duration-300`}
         >
           Home
         </button>
@@ -62,11 +62,10 @@ export const Navbar = () => {
       <li>
         <button
           onClick={() => handleNavigate("portfolio")}
-          className={`${
-            location.pathname === "/portfolio"
-              ? "text-blue-600"
-              : "hover:text-blue-500"
-          } text-sm font-semibold transition duration-300`}
+          className={`${location.pathname === "/portfolio"
+            ? "text-blue-600"
+            : "hover:text-blue-500"
+            } text-sm font-semibold transition duration-300`}
         >
           Portfolio
         </button>
@@ -74,11 +73,10 @@ export const Navbar = () => {
       <li>
         <button
           onClick={() => handleNavigate("trade")}
-          className={`${
-            location.pathname === "/trade"
-              ? "text-blue-600"
-              : "hover:text-blue-500"
-          } text-sm font-semibold transition duration-300`}
+          className={`${location.pathname === "/trade"
+            ? "text-blue-600"
+            : "hover:text-blue-500"
+            } text-sm font-semibold transition duration-300`}
         >
           Trade
         </button>
@@ -86,11 +84,10 @@ export const Navbar = () => {
       <li>
         <button
           onClick={() => handleNavigate("funds")}
-          className={`${
-            location.pathname === "/funds"
-              ? "text-blue-600"
-              : "hover:text-blue-500"
-          } text-sm font-semibold transition duration-300`}
+          className={`${location.pathname === "/funds"
+            ? "text-blue-600"
+            : "hover:text-blue-500"
+            } text-sm font-semibold transition duration-300`}
         >
           Funds
         </button>
@@ -98,11 +95,10 @@ export const Navbar = () => {
       <li>
         <button
           onClick={() => handleNavigate("chatbot")}
-          className={`${
-            location.pathname === "/chatbot"
-              ? "text-blue-600"
-              : "hover:text-blue-500"
-          } text-sm font-semibold transition duration-300`}
+          className={`${location.pathname === "/chatbot"
+            ? "text-blue-600"
+            : "hover:text-blue-500"
+            } text-sm font-semibold transition duration-300`}
         >
           DataBridgeAI
         </button>

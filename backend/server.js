@@ -20,7 +20,7 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const port = 4000;
+const port = process.env.PORT || 4000;
 const app = express();
 const API_KEY = process.env.GROQ_API_KEY;
 // API middlewares
@@ -28,7 +28,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(
   cors({
-    origin: "http://localhost:3000", // Your React app's URL
+    origin: process.env.CLIENT_URL || "http://localhost:3000", // Your React app's URL
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -36,14 +36,23 @@ app.use(
 );
 // app.use(express.static('public'));
 
+const dbConfig = process.env.DATABASE_URL
+  ? {
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+      rejectUnauthorized: false,
+    },
+  }
+  : {
+    host: "localhost",
+    user: "postgres",
+    port: process.env.DB_PORT,
+    password: process.env.PASSWORD, // Replace with your actual password
+    database: process.env.DATABASE,
+  };
+
 // DB connection setup
-const con = new Client({
-  host: "localhost",
-  user: "postgres",
-  port: process.env.DB_PORT,
-  password: process.env.PASSWORD, // Replace with your actual password
-  database: process.env.DATABASE,
-});
+const con = new Client(dbConfig);
 // Connect to the database
 con
   .connect()
@@ -838,9 +847,9 @@ const generateSQLQuery = async (
   const schemaContext = `Table ${tableName}:\nColumns: ${tableSchema
     .map((col) => `${col.column}: ${col.type}`)
     .join(", ")}\n\nTable content sample:\n${tableContent.contentString.slice(
-    0,
-    1000
-  )}...`; // Limiting content sample to avoid token limits
+      0,
+      1000
+    )}...`; // Limiting content sample to avoid token limits
 
   const completion = await groq.chat.completions.create({
     messages: [
