@@ -135,7 +135,11 @@ const checkDateChange = () => {
     console.log("Date has not changed. All good!");
   }
 };
-checkDateChange();
+try {
+  checkDateChange();
+} catch (error) {
+  console.error("Error in initial date check:", error);
+}
 app.post("/formPost", async (req, res) => {
   try {
     // console.log("Received login request:", req.body); // Debug log
@@ -676,7 +680,18 @@ const scrapeNews = async () => {
   const url = "https://www.google.com/finance/?hl=en";
 
   // Launch Puppeteer
-  const browser = await puppeteer.launch();
+  const browser = await puppeteer.launch({
+    args: [
+      "--disable-setuid-sandbox",
+      "--no-sandbox",
+      "--single-process",
+      "--no-zygote",
+    ],
+    executablePath:
+      process.env.NODE_ENV === "production"
+        ? process.env.PUPPETEER_EXECUTABLE_PATH
+        : puppeteer.executablePath(),
+  });
   const page = await browser.newPage();
 
   try {
