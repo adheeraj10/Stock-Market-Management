@@ -175,8 +175,11 @@ app.post("/formPost", async (req, res) => {
 app.post("/api/admin_login", async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (email != "aviral@gmail.com" || password != "1234") {
-      res.status(500).json({ error: "Incorrect Credentials" });
+    const adminEmail = process.env.ADMIN_EMAIL || "adheeraj010@gmail.com";
+    const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
+
+    if (email !== adminEmail || password !== adminPassword) {
+      return res.status(401).json({ error: "Incorrect Credentials" });
     }
     res.status(200).json({ message: "Admin Login successfull" });
   } catch (error) {
