@@ -19,7 +19,7 @@ services:
         fromService:
           type: web
           name: stock-market-frontend
-          property: url
+          property: host
 
   # Frontend Service
   - type: web
@@ -33,7 +33,7 @@ services:
         fromService:
           type: web
           name: stock-market-backend
-          property: url
+          property: host
 
 databases:
   - name: stock-market-db

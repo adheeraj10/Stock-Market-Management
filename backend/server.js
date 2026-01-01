@@ -28,7 +28,21 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:3000", // Your React app's URL
+    origin: (origin, callback) => {
+      const clientUrl = process.env.CLIENT_URL || "http://localhost:3000";
+      const allowedOrigins = [clientUrl];
+      if (!clientUrl.startsWith("http")) {
+        allowedOrigins.push(`https://${clientUrl}`);
+        allowedOrigins.push(`http://${clientUrl}`); // Optional: allow http for internal testing if needed
+      }
+
+      // Allow localhost for dev or if origin matches
+      if (!origin || allowedOrigins.includes(origin) || origin.startsWith("http://localhost")) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
