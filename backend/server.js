@@ -111,6 +111,10 @@ const getCurrentDate = () => new Date().toISOString().split("T")[0];
 
 // Function to update the date in the .env file
 const updateEnvDate = async (newDate) => {
+  if (!fs.existsSync(envFilePath)) {
+    console.log("No .env file found (Production). Skipping date update.");
+    return;
+  }
   const envContent = fs.readFileSync(envFilePath, "utf-8");
   const updatedContent = envContent.replace(
     /LAST_CHECKED_DATE=.*/,
