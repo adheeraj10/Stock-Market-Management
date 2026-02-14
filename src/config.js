@@ -1,2 +1,7 @@
-const rawApiUrl = process.env.REACT_APP_API_URL || 'http://localhost:4000';
-export const API_URL = rawApiUrl.startsWith('http') ? rawApiUrl : `https://${rawApiUrl}`;
+export const API_URL = (() => {
+  const rawUrl = process.env.REACT_APP_API_URL || 'http://localhost:4000';
+  if (rawUrl.startsWith('http')) return rawUrl;
+  // If it's just a slug (no dots), append .onrender.com
+  if (!rawUrl.includes('.')) return `https://${rawUrl}.onrender.com`;
+  return `https://${rawUrl}`;
+})();
