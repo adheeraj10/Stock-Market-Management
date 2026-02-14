@@ -31,7 +31,8 @@ app.use(
       const clientUrl = process.env.CLIENT_URL || "http://localhost:3000";
       const allowedOrigins = [
         "http://localhost:3000",
-        "https://stock-market-frontend-3sme.onrender.com"
+        "https://stock-market-frontend-3sme.onrender.com",
+        "https://stock-market-backend-3sme.onrender.com"
       ];
 
       if (clientUrl && !allowedOrigins.includes(clientUrl)) {
