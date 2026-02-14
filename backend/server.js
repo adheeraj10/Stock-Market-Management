@@ -49,6 +49,10 @@ app.use(
   })
 );
 // app.use(express.static('public'));
+// Health check route
+app.get("/", (req, res) => {
+  res.status(200).send("Backend is running");
+});
 
 const dbConfig = process.env.DATABASE_URL
   ? {
