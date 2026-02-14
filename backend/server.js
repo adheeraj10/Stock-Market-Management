@@ -24,15 +24,14 @@ const port = process.env.PORT || 4000;
 const app = express();
 const API_KEY = process.env.GROQ_API_KEY;
 // API middlewares
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// CORS should be first
 app.use(
   cors({
     origin: (origin, callback) => {
       const clientUrl = process.env.CLIENT_URL || "http://localhost:3000";
       const allowedOrigins = [
         "http://localhost:3000",
-        "https://stock-market-frontend-3sme.onrender.com" // Hardcoded fallback for immediate fix
+        "https://stock-market-frontend-3sme.onrender.com"
       ];
 
       if (clientUrl && !allowedOrigins.includes(clientUrl)) {
@@ -44,9 +43,8 @@ app.use(
         }
       }
 
-      console.log("CORS Check:", { origin, allowedOrigins }); // Debug log
+      console.log("CORS Check:", { origin, allowedOrigins });
 
-      // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
 
       if (allowedOrigins.includes(origin) || origin.startsWith("http://localhost")) {
@@ -61,6 +59,17 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Debug middleware to log all requests
+app.use((req, res, next) => {
+  console.log(`[${req.method}] ${req.url}`);
+  console.log('Headers:', req.headers);
+  // console.log('Body:', req.body); // start with headers first to avoid clutter
+  next();
+});
 // app.use(express.static('public'));
 // Health check route
 app.get("/", (req, res) => {
@@ -236,7 +245,10 @@ app.post("/signUpPost", async (req, res) => {
     if (!firstName || !email || !password) {
       console.error("Missing required fields");
       return res.status(400).json({
-        error: "All fields (firstName, email, password) are required",
+        error: "Missing required fields",
+        receivedBody: req.body,
+        contentType: req.headers['content-type'],
+        details: { firstName: !!firstName, email: !!email, password: !!password }
       });
     }
 
