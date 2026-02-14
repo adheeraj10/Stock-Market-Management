@@ -30,17 +30,30 @@ app.use(
   cors({
     origin: (origin, callback) => {
       const clientUrl = process.env.CLIENT_URL || "http://localhost:3000";
-      const allowedOrigins = [clientUrl];
-      if (!clientUrl.startsWith("http")) {
-        allowedOrigins.push(`https://${clientUrl}`);
-        allowedOrigins.push(`http://${clientUrl}`); // Optional: allow http for internal testing if needed
+      const allowedOrigins = [
+        "http://localhost:3000",
+        "https://stock-market-frontend-3sme.onrender.com" // Hardcoded fallback for immediate fix
+      ];
+
+      if (clientUrl && !allowedOrigins.includes(clientUrl)) {
+        if (!clientUrl.startsWith("http")) {
+          allowedOrigins.push(`https://${clientUrl}`);
+          allowedOrigins.push(`http://${clientUrl}`);
+        } else {
+          allowedOrigins.push(clientUrl);
+        }
       }
 
-      // Allow localhost for dev or if origin matches
-      if (!origin || allowedOrigins.includes(origin) || origin.startsWith("http://localhost")) {
-        callback(null, true);
+      console.log("CORS Check:", { origin, allowedOrigins }); // Debug log
+
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin) || origin.startsWith("http://localhost")) {
+        return callback(null, true);
       } else {
-        callback(new Error("Not allowed by CORS"));
+        console.error("Blocked by CORS:", origin);
+        return callback(new Error("Not allowed by CORS"));
       }
     },
     credentials: true,
