@@ -126,47 +126,76 @@ async function scrapeAndStoreStockData() {
     ECL: "NYSE",
   };
 
+  console.log("Starting stock scraping...");
   const browser = await puppeteer.launch({
+    headless: "new",
     args: [
       "--disable-setuid-sandbox",
       "--no-sandbox",
       "--single-process",
       "--no-zygote",
+      "--disable-dev-shm-usage",
+      "--disable-gpu",
+      "--disable-extensions",
+      "--disable-infobars",
     ],
     executablePath:
       process.env.NODE_ENV === "production"
         ? process.env.PUPPETEER_EXECUTABLE_PATH
         : puppeteer.executablePath(),
   });
-  const page = await browser.newPage();
 
-  const stockData = [];
+  try {
+    const page = await browser.newPage();
+    // Block images and fonts to save bandwidth/memory
+    await page.setRequestInterception(true);
+    page.on('request', (req) => {
+      if (['image', 'stylesheet', 'font'].includes(req.resourceType())) {
+        req.abort();
+      } else {
+        req.continue();
+      }
+    });
 
-  for (const [symbol, exchange] of Object.entries(stockSymbols)) {
-    try {
-      const url = `https://www.google.com/finance/quote/${symbol}:${exchange}`;
-      console.log(`Fetching data for ${symbol} from ${url}`);
+    const stockData = [];
 
-      await page.goto(url, { waitUntil: "domcontentloaded" });
+    // Limit to top 20 stocks for now to prevent timeout/crash on free tier
+    // We can increase this later if it's stable.
+    const symbols = Object.entries(stockSymbols).slice(0, 20);
 
-      // Extract stock data
-      const data = await page.evaluate(() => {
-        const name = document.querySelector(".zzDege")?.textContent || "N/A";
-        const price =
-          document
-            .querySelector(".YMlKec.fxKbKc")
-            ?.textContent.replace(/[$,]/g, "") || "0";
-        return { name, price };
-      });
+    for (const [symbol, exchange] of symbols) {
+      try {
+        const url = `https://www.google.com/finance/quote/${symbol}:${exchange}`;
+        // console.log(`Fetching ${symbol}...`); // Reduce log spam
 
-      stockData.push({ symbol, exchange, ...data });
-      console.log(`Scraped ${symbol}:`, data);
-    } catch (error) {
-      console.error(`Failed to scrape ${symbol}:`, error.message);
+        // Shorter timeout to fail fast
+        await page.goto(url, { waitUntil: "domcontentloaded", timeout: 15000 });
+
+        const data = await page.evaluate(() => {
+          const name = document.querySelector(".zzDege")?.textContent || "N/A";
+          const price =
+            document
+              .querySelector(".YMlKec.fxKbKc")
+              ?.textContent.replace(/[$,]/g, "") || "0";
+          return { name, price };
+        });
+
+        if (data.name !== "N/A") {
+          stockData.push({ symbol, exchange, ...data });
+          console.log(`Scraped ${symbol}: ${data.price}`);
+        }
+      } catch (error) {
+        console.error(`Skipped ${symbol}: ${error.message}`);
+      }
     }
-  }
 
-  await browser.close();
+    // Process db update below...
+  } catch (err) {
+    console.error("Critical scraping error:", err);
+  } finally {
+    await browser.close();
+    console.log("Browser closed.");
+  }
 
   const client = new Client(dbConfig);
   await client.connect();
