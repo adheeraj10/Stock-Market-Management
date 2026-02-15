@@ -159,7 +159,7 @@ const checkDateChange = () => {
     console.log(`Date has changed from ${lastCheckedDate} to ${currentDate}`);
     // Perform your date-change logic here
     console.log("Executing logic for the new date...");
-    scrapeAndStoreStockData();
+    // scrapeAndStoreStockData(); // DISABLED: Causing Memory Crash on Free Tier
     // Update the .env file with the new date
     updateEnvDate(currentDate);
   } else {
