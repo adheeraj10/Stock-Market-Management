@@ -145,11 +145,7 @@ async function scrapeAndStoreStockData() {
       "--disable-gpu",
       "--disable-extensions",
       "--disable-infobars",
-    ],
-    executablePath:
-      process.env.NODE_ENV === "production"
-        ? process.env.PUPPETEER_EXECUTABLE_PATH
-        : puppeteer.executablePath(),
+    ]
   });
 
   const stockData = [];
