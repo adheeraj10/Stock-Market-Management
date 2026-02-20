@@ -7,7 +7,7 @@ dotenv.config();
 // PostgreSQL database configuration
 const dbConfig = {
   host: "localhost",
-  user: "postgres",
+  user: process.env.DB_USER || "postgres",
   port: process.env.DB_PORT,
   password: process.env.PASSWORD, // Replace with your actual password
   database: process.env.DATABASE,

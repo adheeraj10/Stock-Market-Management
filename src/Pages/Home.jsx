@@ -190,7 +190,7 @@ export const Home = () => {
                         {company.close.toFixed(2)}
                       </td>
                       <td className="px-6 py-4 text-white text-right">
-                        {company.volume.toLocaleString()}
+                        {Number(company.volume).toLocaleString()}
                       </td>
                       <td className="px-6 py-4 text-white text-center">
                         <button

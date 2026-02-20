@@ -17,6 +17,30 @@ const ChatInterface = () => {
     scrollToBottom();
   }, [messages]);
 
+  // Fetch chat history on component mount
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/chatHistory`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (response.ok) {
+          const historyData = await response.json();
+          if (historyData.length > 0) {
+            setMessages(historyData);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load chat history:", error);
+      }
+    };
+    fetchHistory();
+  }, []);
+
   const processPrompt = async (prompt) => {
     let response;
     try {
@@ -33,10 +57,10 @@ const ChatInterface = () => {
       }
 
       const data = await response.json();
-      return data.response;
+      return { content: data.response, query: data.query };
     } catch (error) {
       console.error("Error:", error);
-      return "This operation requires database modification which is not allowed. Please ask questions about reading/querying the existing data only.";
+      return { content: "This operation requires database modification which is not allowed. Please ask questions about reading/querying the existing data only.", query: null };
     }
   };
 
@@ -50,12 +74,13 @@ const ChatInterface = () => {
     setIsLoading(true);
 
     try {
-      const response = await processPrompt(userMessage);
+      const responseData = await processPrompt(userMessage);
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: response,
+          content: responseData.content,
+          query: responseData.query,
         },
       ]);
     } catch (error) {
@@ -90,18 +115,16 @@ const ChatInterface = () => {
               }`}
           >
             <div className="flex-1">
-              {message.role === "assistant" && message.content.query && (
+              {message.role === "assistant" && message.query && (
                 <div className="mb-2">
                   <p className="text-gray-400 text-sm">Generated Query:</p>
-                  <code className="block bg-gray-900 p-2 rounded mt-1 text-green-400">
-                    {message.content.query}
+                  <code className="block bg-gray-900 p-2 rounded mt-1 text-green-400 whitespace-pre-wrap">
+                    {message.query}
                   </code>
                 </div>
               )}
               <p className="text-white">
-                {typeof message.content === "string"
-                  ? message.content
-                  : message.content.response}
+                {message.content}
               </p>
             </div>
           </div>

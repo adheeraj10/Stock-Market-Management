@@ -1,4 +1,4 @@
-CREATE TABLE Users (
+CREATE TABLE IF NOT EXISTS Users (
     user_id VARCHAR(50) PRIMARY KEY,
     first_name VARCHAR(50) NOT NULL,
     last_name VARCHAR(50) NOT NULL,
@@ -7,7 +7,7 @@ CREATE TABLE Users (
     total_balance NUMERIC(15, 2) DEFAULT 0
 );
 
-CREATE TABLE Companies (
+CREATE TABLE IF NOT EXISTS Companies (
     company_id SERIAL PRIMARY KEY,
     company_name VARCHAR(100) UNIQUE NOT NULL,
     ticker_symbol VARCHAR(10) UNIQUE NOT NULL,
@@ -15,7 +15,7 @@ CREATE TABLE Companies (
     total_shares INT NOT NULL
 );
 
-CREATE TABLE Stocks (
+CREATE TABLE IF NOT EXISTS Stocks (
     stock_id SERIAL PRIMARY KEY,
     user_id VARCHAR(50) REFERENCES Users(user_id) ON DELETE CASCADE,
     company_id INT REFERENCES Companies(company_id) ON DELETE CASCADE,
@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS market_data (
       close FLOAT,
       volume BIGINT
     );
-CREATE TABLE Transactions (
+CREATE TABLE IF NOT EXISTS Transactions (
     transaction_id SERIAL PRIMARY KEY,
     user_id VARCHAR(50) REFERENCES Users(user_id) ON DELETE CASCADE,
     company_id INT REFERENCES Companies(company_id) ON DELETE CASCADE,
@@ -42,4 +42,13 @@ CREATE TABLE Transactions (
     quantity INT NOT NULL,
     total_amount NUMERIC(15, 2) NOT NULL,
     transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP -- Tracks the exact time of the transaction
+);
+
+CREATE TABLE IF NOT EXISTS ChatHistory (
+    message_id SERIAL PRIMARY KEY,
+    user_id VARCHAR(50) REFERENCES Users(user_id) ON DELETE CASCADE,
+    role VARCHAR(10) NOT NULL, -- 'user' or 'assistant'
+    content TEXT NOT NULL,
+    query TEXT, -- Optional, to store generated SQL query
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

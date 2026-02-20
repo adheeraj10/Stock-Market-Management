@@ -28,32 +28,8 @@ const API_KEY = process.env.GROQ_API_KEY;
 app.use(
   cors({
     origin: (origin, callback) => {
-      const clientUrl = process.env.CLIENT_URL || "http://localhost:3000";
-      const allowedOrigins = [
-        "http://localhost:3000",
-        "https://stock-market-frontend-3sme.onrender.com",
-        "https://stock-market-backend-3sme.onrender.com"
-      ];
-
-      if (clientUrl && !allowedOrigins.includes(clientUrl)) {
-        if (!clientUrl.startsWith("http")) {
-          allowedOrigins.push(`https://${clientUrl}`);
-          allowedOrigins.push(`http://${clientUrl}`);
-        } else {
-          allowedOrigins.push(clientUrl);
-        }
-      }
-
-      console.log("CORS Check:", { origin, allowedOrigins });
-
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes(origin) || origin.startsWith("http://localhost")) {
-        return callback(null, true);
-      } else {
-        console.error("Blocked by CORS:", origin);
-        return callback(new Error("Not allowed by CORS"));
-      }
+      // Allow all for debugging
+      return callback(null, true);
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -99,24 +75,30 @@ con
   .connect()
   .then(async () => {
     console.log("DB connected");
-    //  await initializeDatabase(); // Initialize tables
+    await initializeDatabase(); // Initialize tables
   })
   .catch((err) => console.error("DB connection error: ", err));
-const groq = new Groq({
-  apiKey: API_KEY,
-});
+const groq = API_KEY
+  ? new Groq({ apiKey: API_KEY })
+  : { chat: { completions: { create: async () => ({ choices: [{ message: { content: "Groq API Key missing" } }] }) } } };
+
+if (!API_KEY) {
+  console.warn("WARNING: GROQ_API_KEY is missing. AI features will be disabled.");
+}
 // Function to initialize database tables
-//console.log("reached here")
-//  async function initializeDatabase() {
-//      try {
-//          const sqlFilePath = path.join(__dirname, 'db', 'tables.sql');
-//          const sqlCommands = fs.readFileSync(sqlFilePath, 'utf8');
-//          await con.query(sqlCommands);
-//          console.log("Tables initialized successfully");
-//      } catch (err) {
-//         console.error("Error initializing tables:",err);
-//     }
-//  }
+
+async function initializeDatabase() {
+  console.log("Initializing database tables...");
+  try {
+    const sqlFilePath = path.join(__dirname, 'db', 'tables.sql');
+    console.log("Reading SQL from:", sqlFilePath);
+    const sqlCommands = fs.readFileSync(sqlFilePath, 'utf8');
+    await con.query(sqlCommands);
+    console.log("Tables initialized successfully");
+  } catch (err) {
+    console.error("Error initializing tables:", err);
+  }
+}
 
 //  console.log("reached here")
 
@@ -159,7 +141,7 @@ const checkDateChange = () => {
     console.log(`Date has changed from ${lastCheckedDate} to ${currentDate}`);
     // Perform your date-change logic here
     console.log("Executing logic for the new date...");
-    // scrapeAndStoreStockData(); // DISABLED: Causing Memory Crash on Free Tier
+    scrapeAndStoreStockData(); // ENABLED: Needed for local data
     // Update the .env file with the new date
     updateEnvDate(currentDate);
   } else {
@@ -871,7 +853,7 @@ const determineRelevantTable = async (prompt, dbStructure) => {
         content: `Schema:\n${schemaDescription}\n\nQuestion: ${prompt}\n\nReturn only the most relevant table name.`,
       },
     ],
-    model: "llama3-70b-8192",
+    model: "llama-3.3-70b-versatile",
     temperature: 0.1,
     max_tokens: 50,
   });
@@ -932,7 +914,7 @@ const generateSQLQuery = async (
         content: prompt,
       },
     ],
-    model: "llama3-70b-8192",
+    model: "llama-3.3-70b-versatile",
     temperature: 0.2,
     max_tokens: 512,
   });
@@ -963,7 +945,7 @@ const interpretResults = async (
                  Please provide a clear answer to the original question based on these results.`,
       },
     ],
-    model: "llama3-70b-8192",
+    model: "llama-3.3-70b-versatile",
     temperature: 0.3,
     max_tokens: 150,
   });
@@ -979,8 +961,43 @@ app.post("/api/processPrompt", async (req, res) => {
       return res.status(400).json({ error: "Prompt is required" });
     }
 
+    // Save the user's prompt to ChatHistory
+    if (user_id) {
+      try {
+        await con.query(
+          "INSERT INTO ChatHistory (user_id, role, content) VALUES ($1, $2, $3)",
+          [user_id, "user", prompt]
+        );
+      } catch (dbErr) {
+        console.error("Error saving user prompt to chat history:", dbErr);
+      }
+    }
+
     // Step 1: Get database schema
     const dbStructure = await getTableStructures();
+
+    if (!API_KEY) {
+      const fallbackResponse = "DataBridge AI requires a valid GROQ_API_KEY to function. Please configure the API key in the backend environment.";
+
+      // Save assistant response to history
+      if (user_id) {
+        try {
+          await con.query(
+            "INSERT INTO ChatHistory (user_id, role, content) VALUES ($1, $2, $3)",
+            [user_id, "assistant", fallbackResponse]
+          );
+        } catch (dbErr) {
+          console.error("Error saving fallback response:", dbErr);
+        }
+      }
+
+      return res.json({
+        response: fallbackResponse,
+        query: null,
+        relevantTable: null,
+        rawResults: [],
+      });
+    }
 
     // Step 2: Determine the relevant table
     const relevantTable = await determineRelevantTable(prompt, dbStructure);
@@ -997,11 +1014,14 @@ app.post("/api/processPrompt", async (req, res) => {
     );
 
     // Step 5: Execute the query
-    const sqlQueryTrim = sqlQuery.replace(/^```|```$/g, "").trim();
+    let sqlQueryTrim = sqlQuery.replace(/^```sql/i, "").replace(/^```/, "").replace(/```$/g, "").trim();
+    if (sqlQueryTrim.toLowerCase().startsWith("sql\n")) {
+      sqlQueryTrim = sqlQueryTrim.substring(4).trim();
+    }
     console.log("Generated SQL Query:", sqlQueryTrim);
     const queryResult = await con.query(sqlQueryTrim);
 
-    // Step 6: Interpret results with full context
+    // Interpret results with full context
     const interpretation = await interpretResults(
       prompt,
       queryResult.rows,
@@ -1009,6 +1029,18 @@ app.post("/api/processPrompt", async (req, res) => {
       relevantTable,
       tableContent
     );
+
+    // Save the assistant's response to ChatHistory
+    if (user_id) {
+      try {
+        await con.query(
+          "INSERT INTO ChatHistory (user_id, role, content, query) VALUES ($1, $2, $3, $4)",
+          [user_id, "assistant", interpretation, sqlQueryTrim]
+        );
+      } catch (dbErr) {
+        console.error("Error saving assistant response to chat history:", dbErr);
+      }
+    }
 
     // Send response
     res.json({
@@ -1019,6 +1051,26 @@ app.post("/api/processPrompt", async (req, res) => {
     });
   } catch (err) {
     console.error("Error processing prompt:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Fetch chat history API endpoint
+app.get("/api/chatHistory", async (req, res) => {
+  try {
+    if (!user_id) {
+      return res.status(401).json({ error: "User not authenticated" });
+    }
+    const query = `
+      SELECT role, content, query, timestamp
+      FROM ChatHistory
+      WHERE user_id = $1
+      ORDER BY timestamp ASC
+    `;
+    const result = await con.query(query, [user_id]);
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Error fetching chat history:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });

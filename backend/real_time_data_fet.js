@@ -145,6 +145,8 @@ async function scrapeAndStoreStockData() {
         : puppeteer.executablePath(),
   });
 
+  const stockData = [];
+
   try {
     const page = await browser.newPage();
     // Block images and fonts to save bandwidth/memory
@@ -156,8 +158,6 @@ async function scrapeAndStoreStockData() {
         req.continue();
       }
     });
-
-    const stockData = [];
 
     // Limit to top 20 stocks for now to prevent timeout/crash on free tier
     // We can increase this later if it's stable.
