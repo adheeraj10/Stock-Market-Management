@@ -1,5 +1,8 @@
 # Stock Trading Platform
 
+🚀 **[Live Demo: Play with the App Here!](https://stock-market-frontend-XXXX.onrender.com)** *(replace with your actual Render URL)*
+
+
 A modern web application for real-time stock trading and portfolio management built with React.js and Node.js. The platform offers live market data through web scraping and features a sleek, responsive interface using Tailwind CSS and Aceternity UI components.
 
 ## Features Implemented
