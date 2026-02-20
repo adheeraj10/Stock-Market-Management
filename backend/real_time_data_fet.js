@@ -1,8 +1,7 @@
-// const puppeteer = require('puppeteer');
-// const { Client } = require('pg');
 import pkg from "pg";
 const { Client } = pkg;
-import puppeteer from "puppeteer";
+import * as cheerio from "cheerio";
+import axios from "axios";
 import dotenv from "dotenv";
 dotenv.config();
 // PostgreSQL configuration
@@ -133,71 +132,43 @@ async function scrapeAndStoreStockData() {
     ECL: "NYSE",
   };
 
-  console.log("Starting stock scraping...");
-  const browser = await puppeteer.launch({
-    headless: "new",
-    args: [
-      "--disable-setuid-sandbox",
-      "--no-sandbox",
-      "--single-process",
-      "--no-zygote",
-      "--disable-dev-shm-usage",
-      "--disable-gpu",
-      "--disable-extensions",
-      "--disable-infobars",
-    ]
-  });
+  console.log("Starting lightweight stock scraping (Axios + Cheerio)...");
 
   const stockData = [];
 
   try {
-    const page = await browser.newPage();
-    // Block images and fonts to save bandwidth/memory
-    await page.setRequestInterception(true);
-    page.on('request', (req) => {
-      if (['image', 'stylesheet', 'font'].includes(req.resourceType())) {
-        req.abort();
-      } else {
-        req.continue();
-      }
-    });
-
     // Limit to top 20 stocks for now to prevent timeout/crash on free tier
-    // We can increase this later if it's stable.
     const symbols = Object.entries(stockSymbols).slice(0, 20);
 
     for (const [symbol, exchange] of symbols) {
       try {
         const url = `https://www.google.com/finance/quote/${symbol}:${exchange}`;
-        // console.log(`Fetching ${symbol}...`); // Reduce log spam
 
-        // Shorter timeout to fail fast
-        await page.goto(url, { waitUntil: "domcontentloaded", timeout: 15000 });
-
-        const data = await page.evaluate(() => {
-          const name = document.querySelector(".zzDege")?.textContent || "N/A";
-          const price =
-            document
-              .querySelector(".YMlKec.fxKbKc")
-              ?.textContent.replace(/[$,]/g, "") || "0";
-          return { name, price };
+        // Fetch static HTML
+        const { data } = await axios.get(url, {
+          headers: {
+            // Act like a standard browser to prevent 403 blocks
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+          },
+          timeout: 10000
         });
 
-        if (data.name !== "N/A") {
-          stockData.push({ symbol, exchange, ...data });
-          console.log(`Scraped ${symbol}: ${data.price}`);
+        const $ = cheerio.load(data);
+
+        const name = $(".zzDege").text() || "N/A";
+        const priceText = $(".YMlKec.fxKbKc").text();
+        const price = priceText ? priceText.replace(/[$,]/g, "") : "0";
+
+        if (name !== "N/A") {
+          stockData.push({ symbol, exchange, name, price });
+          console.log(`Scraped ${symbol}: ${price}`);
         }
       } catch (error) {
         console.error(`Skipped ${symbol}: ${error.message}`);
       }
     }
-
-    // Process db update below...
   } catch (err) {
     console.error("Critical scraping error:", err);
-  } finally {
-    await browser.close();
-    console.log("Browser closed.");
   }
 
   const client = new Client(dbConfig);
@@ -211,23 +182,23 @@ async function scrapeAndStoreStockData() {
       // const total_shares = getRandomShares(1000, 10000);
 
       const query = `
-  WITH existing_shares AS (
-    SELECT total_shares 
+  WITH existing_shares AS(
+          SELECT total_shares 
     FROM companies 
     WHERE ticker_symbol = $2
+        )
+  INSERT INTO companies(company_name, ticker_symbol, stock_price, total_shares)
+        VALUES(
+          $1,
+          $2,
+          $3,
+          COALESCE((SELECT total_shares FROM existing_shares), $4)
   )
-  INSERT INTO companies (company_name, ticker_symbol, stock_price, total_shares)
-  VALUES (
-    $1, 
-    $2, 
-    $3, 
-    COALESCE((SELECT total_shares FROM existing_shares), $4)
-  )
-  ON CONFLICT (ticker_symbol) 
-  DO UPDATE SET 
-    company_name = EXCLUDED.company_name,
-    stock_price = EXCLUDED.stock_price;
-`;
+  ON CONFLICT(ticker_symbol) 
+  DO UPDATE SET
+        company_name = EXCLUDED.company_name,
+          stock_price = EXCLUDED.stock_price;
+        `;
 
       const defaultTotalShares = 5000; // or whatever default value you want for new companies
 
@@ -237,7 +208,7 @@ async function scrapeAndStoreStockData() {
         stock_price,
         defaultTotalShares, // This will only be used for new insertions, not updates
       ]);
-      console.log(`Inserted/Updated ${company_name} (${ticker_symbol})`);
+      console.log(`Inserted / Updated ${company_name} (${ticker_symbol})`);
     }
   } catch (error) {
     console.error("Database operation failed:", error.message);

@@ -1,7 +1,8 @@
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
-import puppeteer from "puppeteer";
+import * as cheerio from "cheerio";
+import axios from "axios";
 import Groq from "groq-sdk";
 import dotenv from "dotenv";
 import scrapeAndStoreStockData from "./real_time_data_fet.js";
@@ -695,51 +696,33 @@ app.post("/api/trade", async (req, res) => {
 const scrapeNews = async () => {
   const url = "https://www.google.com/finance/?hl=en";
 
-  // Launch Puppeteer
-  const browser = await puppeteer.launch({
-    args: [
-      "--disable-setuid-sandbox",
-      "--no-sandbox",
-      "--single-process",
-      "--no-zygote",
-    ],
-    executablePath:
-      process.env.NODE_ENV === "production"
-        ? process.env.PUPPETEER_EXECUTABLE_PATH
-        : puppeteer.executablePath(),
-  });
-  const page = await browser.newPage();
-
   try {
-    // Navigate to the URL
-    await page.goto(url, { waitUntil: "domcontentloaded" });
-
-    // Scrape news headlines and hyperlinks
-    const newsData = await page.evaluate(() => {
-      const newsItems = [];
-      const elements = document.querySelectorAll(".Yfwt5"); // Adjust selector if necessary
-
-      elements.forEach((element) => {
-        const headline = element.textContent.trim();
-        console.log(headline);
-        const linkElement = element.closest("a"); // Get closest parent `<a>` tag
-        const hyperlink = linkElement ? linkElement.href : null;
-
-        if (headline && hyperlink) {
-          newsItems.push({ headline, hyperlink });
-        }
-      });
-
-      return newsItems;
+    const { data } = await axios.get(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+      },
+      timeout: 10000
     });
 
-    // Display the extracted data in JSON format on the console
-    return newsData;
+    const $ = cheerio.load(data);
+    const newsItems = [];
+
+    $(".Yfwt5").each((index, element) => {
+      const headline = $(element).text().trim();
+      const linkElement = $(element).closest("a");
+      const hyperlink = linkElement.attr("href");
+
+      if (headline && hyperlink) {
+        // Handle relative URLs
+        const absoluteUrl = hyperlink.startsWith("http") ? hyperlink : `https://www.google.com${hyperlink}`;
+        newsItems.push({ headline, hyperlink: absoluteUrl });
+      }
+    });
+
+    return newsItems;
   } catch (error) {
     console.error("Error scraping the data:", error);
-  } finally {
-    // Close the browser
-    await browser.close();
+    return [];
   }
 };
 
@@ -758,11 +741,11 @@ app.get("/api/real-time-data/:symbol", async (req, res) => {
   try {
     const { symbol } = req.params;
     const query = `
-            SELECT company_id,stock_price,total_shares FROM Companies WHERE ticker_symbol = $1
-        `;
+            SELECT company_id, stock_price, total_shares FROM Companies WHERE ticker_symbol = $1
+          `;
     const result = await con.query(query, [symbol]);
     console.log(
-      `Real-time data fetched for ${symbol}:`,
+      `Real - time data fetched for ${symbol}: `,
       result.rows.length,
       "records"
     );
@@ -786,7 +769,7 @@ const getAllTables = async () => {
         SELECT table_name 
         FROM information_schema.tables 
         WHERE table_schema = 'public';
-    `;
+        `;
   try {
     const result = await con.query(query);
     return result.rows.map((row) => row.table_name);
@@ -801,17 +784,17 @@ const getTableStructures = async () => {
   const dbStructure = {};
   try {
     const query = `
-      SELECT 
+        SELECT
         table_name,
-        column_name,
-        data_type
-      FROM 
+          column_name,
+          data_type
+        FROM
         information_schema.columns
-      WHERE 
+        WHERE
         table_schema = 'public'
-      ORDER BY 
+      ORDER BY
         table_name, ordinal_position;
-    `;
+        `;
 
     const result = await con.query(query);
     result.rows.forEach((row) => {
@@ -836,9 +819,9 @@ const determineRelevantTable = async (prompt, dbStructure) => {
   const schemaDescription = Object.entries(dbStructure)
     .map(([tableName, columns]) => {
       const columnDesc = columns
-        .map((col) => `${col.column}: ${col.type}`)
+        .map((col) => `${col.column}: ${col.type} `)
         .join(", ");
-      return `Table ${tableName} has columns: ${columnDesc}`;
+      return `Table ${tableName} has columns: ${columnDesc} `;
     })
     .join("\n");
 
@@ -846,7 +829,7 @@ const determineRelevantTable = async (prompt, dbStructure) => {
     messages: [
       {
         role: "system",
-        content: `You are a database expert. Given a user whose user_id is ${user_id} and user's question and database schema, return only the single most relevant table name that would be needed to answer the question. Return just the table name as a string without any additional text or formatting.`,
+        content: `You are a database expert.Given a user whose user_id is ${user_id} and user's question and database schema, return only the single most relevant table name that would be needed to answer the question. Return just the table name as a string without any additional text or formatting.`,
       },
       {
         role: "user",
