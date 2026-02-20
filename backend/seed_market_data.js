@@ -3,13 +3,20 @@ const { Client } = pkg;
 import dotenv from "dotenv";
 dotenv.config();
 
-const dbConfig = {
-    host: "localhost",
-    user: process.env.DB_USER || "postgres",
-    port: process.env.DB_PORT || 5432,
-    password: process.env.PASSWORD,
-    database: process.env.DATABASE,
-};
+const dbConfig = process.env.DATABASE_URL
+    ? {
+        connectionString: process.env.DATABASE_URL,
+        ssl: {
+            rejectUnauthorized: false,
+        },
+    }
+    : {
+        host: "localhost",
+        user: process.env.DB_USER || "postgres",
+        port: process.env.DB_PORT || 5432,
+        password: process.env.PASSWORD,
+        database: process.env.DATABASE,
+    };
 
 async function seedData() {
     const client = new Client(dbConfig);

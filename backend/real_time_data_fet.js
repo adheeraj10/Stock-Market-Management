@@ -6,13 +6,20 @@ import puppeteer from "puppeteer";
 import dotenv from "dotenv";
 dotenv.config();
 // PostgreSQL configuration
-const dbConfig = {
-  host: "localhost",
-  user: process.env.DB_USER || "postgres",
-  port: process.env.DB_PORT || 5000,
-  password: process.env.PASSWORD, // Replace with your actual password
-  database: process.env.DATABASE,
-};
+const dbConfig = process.env.DATABASE_URL
+  ? {
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+      rejectUnauthorized: false,
+    },
+  }
+  : {
+    host: "localhost",
+    user: process.env.DB_USER || "postgres",
+    port: process.env.DB_PORT || 5432,
+    password: process.env.PASSWORD,
+    database: process.env.DATABASE,
+  };
 console.log(process.env.DATABASE);
 // Function to get random number for total shares
 // Utility function to generate random shares
