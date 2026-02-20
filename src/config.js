@@ -1,1 +1,1 @@
-export const API_URL = "http://localhost:5001";
+export const API_URL = "https://stock-market-management-9l52.onrender.com"; // Your Render URL
