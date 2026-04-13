@@ -32,10 +32,7 @@ services:
     staticPublishPath: ./build
     envVars:
       - key: REACT_APP_API_URL
-        fromService:
-          type: web
-          name: stock-market-backend
-          property: host
+        value: https://stock-market-backend.onrender.com
 
 databases:
   - name: stock-market-db
